@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/auth/http";
+import { requireAdmin } from "@/lib/auth/session";
 import { createTag, listTags } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -12,24 +14,29 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as {
-    categoryId?: string;
-    name?: string;
-    color?: string;
-  };
-  if (!body.categoryId || !body.name?.trim()) {
-    return NextResponse.json(
-      { error: "categoryId and name are required" },
-      { status: 400 },
-    );
+  try {
+    await requireAdmin();
+    const body = (await request.json()) as {
+      categoryId?: string;
+      name?: string;
+      color?: string;
+    };
+    if (!body.categoryId || !body.name?.trim()) {
+      return NextResponse.json(
+        { error: "categoryId and name are required" },
+        { status: 400 },
+      );
+    }
+    const tag = await createTag({
+      categoryId: body.categoryId,
+      name: body.name,
+      color: body.color ?? "#5865F2",
+    });
+    if (!tag) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+    return NextResponse.json(tag, { status: 201 });
+  } catch (error) {
+    return jsonError(error);
   }
-  const tag = await createTag({
-    categoryId: body.categoryId,
-    name: body.name,
-    color: body.color ?? "#5865F2",
-  });
-  if (!tag) {
-    return NextResponse.json({ error: "Category not found" }, { status: 404 });
-  }
-  return NextResponse.json(tag, { status: 201 });
 }

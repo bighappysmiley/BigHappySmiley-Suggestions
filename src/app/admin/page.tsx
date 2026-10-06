@@ -1,7 +1,13 @@
+import { redirect } from "next/navigation";
 import { AdminPanel } from "@/components/AdminPanel";
+import { getPublicUser } from "@/lib/auth/session";
 import { listCategories, listTags } from "@/lib/store";
 
 export default async function AdminPage() {
+  const user = await getPublicUser();
+  if (!user) redirect("/login?redirect=/admin");
+  if (!user.isAdmin) redirect("/");
+
   const [categories, tags] = await Promise.all([listCategories(), listTags()]);
 
   return (

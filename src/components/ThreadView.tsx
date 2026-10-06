@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { formatRelativeTime } from "@/lib/format";
 import type { Category, Reply, Suggestion, Tag } from "@/lib/types";
 import { Avatar } from "./Avatar";
@@ -20,10 +21,10 @@ export function ThreadView({
   tags: Tag[];
 }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [suggestion, setSuggestion] = useState(initialSuggestion);
   const [replies, setReplies] = useState(initialReplies);
   const [body, setBody] = useState("");
-  const [authorName, setAuthorName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pinning, setPinning] = useState(false);
@@ -31,6 +32,7 @@ export function ThreadView({
   const tagMap = new Map(tags.map((tag) => [tag.id, tag]));
 
   async function togglePin() {
+    if (!user?.isAdmin) return;
     setPinning(true);
     setError(null);
     try {
@@ -39,7 +41,10 @@ export function ThreadView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "togglePin" }),
       });
-      if (!res.ok) throw new Error("Failed to update pin");
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error || "Failed to update pin");
+      }
       const updated = (await res.json()) as Suggestion;
       setSuggestion(updated);
       router.refresh();
@@ -52,6 +57,10 @@ export function ThreadView({
 
   async function onReply(event: React.FormEvent) {
     event.preventDefault();
+    if (!user) {
+      router.push(`/login?redirect=/suggestions/${suggestion.id}`);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -61,7 +70,6 @@ export function ThreadView({
         body: JSON.stringify({
           suggestionId: suggestion.id,
           body,
-          authorName: authorName || "Anonymous",
         }),
       });
       if (!res.ok) {
@@ -101,14 +109,16 @@ export function ThreadView({
             {formatRelativeTime(suggestion.updatedAt)}
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={togglePin}
-          disabled={pinning}
-        >
-          {suggestion.pinned ? "Unpin" : "Pin"}
-        </button>
+        {user?.isAdmin && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={togglePin}
+            disabled={pinning}
+          >
+            {suggestion.pinned ? "Unpin" : "Pin"}
+          </button>
+        )}
       </header>
 
       <div className="page-body">
@@ -140,7 +150,11 @@ export function ThreadView({
               {replies.length === 0 ? (
                 <div className="empty-state">
                   <h3>No replies yet</h3>
-                  <p>Be the first to discuss this suggestion.</p>
+                  <p>
+                    {user
+                      ? "Start the discussion."
+                      : "Sign in to reply to this suggestion."}
+                  </p>
                 </div>
               ) : (
                 replies.map((reply) => (
@@ -159,39 +173,41 @@ export function ThreadView({
                 ))
               )}
             </div>
-            <form className="composer" onSubmit={onReply}>
-              <div className="field">
-                <label htmlFor="reply-body">Reply</label>
-                <textarea
-                  id="reply-body"
-                  className="textarea"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="Add a reply…"
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="reply-author">Your name</label>
-                <input
-                  id="reply-author"
-                  className="input"
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
-                  placeholder="Anonymous"
-                  maxLength={80}
-                />
-              </div>
-              <div className="form-actions">
-                <button
-                  type="submit"
+            {user ? (
+              <form className="composer" onSubmit={onReply}>
+                <div className="field">
+                  <label htmlFor="reply-body">Reply as {user.name}</label>
+                  <textarea
+                    id="reply-body"
+                    className="textarea"
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    placeholder="Add a reply…"
+                    required
+                  />
+                </div>
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={submitting}
+                  >
+                    {submitting ? "Posting…" : "Post reply"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="composer">
+                <p className="field-hint">Sign in to join this thread.</p>
+                <Link
+                  href={`/login?redirect=/suggestions/${suggestion.id}`}
                   className="btn btn-primary"
-                  disabled={submitting}
+                  style={{ alignSelf: "flex-start" }}
                 >
-                  {submitting ? "Posting…" : "Post reply"}
-                </button>
+                  Sign in to reply
+                </Link>
               </div>
-            </form>
+            )}
           </div>
         </div>
       </div>

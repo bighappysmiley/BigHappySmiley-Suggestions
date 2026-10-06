@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import type { Category, Tag } from "@/lib/types";
 
 const TAG_COLORS = [
@@ -25,6 +27,7 @@ export function AdminPanel({
   tags: Tag[];
 }) {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [categories, setCategories] = useState(initialCategories);
   const [tags, setTags] = useState(initialTags);
   const [name, setName] = useState("");
@@ -38,10 +41,20 @@ export function AdminPanel({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    if (!loading && (!user || !user.isAdmin)) {
+      router.replace(user ? "/" : "/login?redirect=/admin");
+    }
+  }, [loading, user, router]);
+
   const categoryTags = useMemo(
     () => tags.filter((tag) => tag.categoryId === selectedCategoryId),
     [tags, selectedCategoryId],
   );
+
+  if (loading || !user?.isAdmin) {
+    return <div className="page-body">Checking admin access…</div>;
+  }
 
   async function createCategory(event: React.FormEvent) {
     event.preventDefault();
@@ -77,14 +90,15 @@ export function AdminPanel({
     setError(null);
     try {
       const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete category");
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error || "Failed to delete category");
+      }
       setCategories((prev) => prev.filter((c) => c.id !== id));
       setTags((prev) => prev.filter((t) => t.categoryId !== id));
       if (selectedCategoryId === id) {
-        setSelectedCategoryId((prev) => {
-          const next = categories.find((c) => c.id !== id);
-          return next?.id ?? "";
-        });
+        const next = categories.find((c) => c.id !== id);
+        setSelectedCategoryId(next?.id ?? "");
       }
       router.refresh();
     } catch (err) {
@@ -129,7 +143,10 @@ export function AdminPanel({
     setError(null);
     try {
       const res = await fetch(`/api/tags/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete tag");
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error || "Failed to delete tag");
+      }
       setTags((prev) => prev.filter((t) => t.id !== id));
       router.refresh();
     } catch (err) {
@@ -147,7 +164,7 @@ export function AdminPanel({
           <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
             <h2 style={{ fontSize: 15, fontWeight: 600 }}>Categories</h2>
             <p className="field-hint" style={{ marginTop: 4 }}>
-              Forum channels people can post suggestions into.
+              Forum boards people can post suggestions into.
             </p>
           </div>
           <div className="admin-list">
@@ -343,6 +360,10 @@ export function AdminPanel({
           </form>
         </section>
       </div>
+      <p className="field-hint" style={{ marginTop: 12 }}>
+        Admins are controlled by <code>ADMIN_EMAILS</code> and{" "}
+        <code>ADMIN_GITHUB_LOGINS</code>. <Link href="/">Return home</Link>
+      </p>
     </div>
   );
 }

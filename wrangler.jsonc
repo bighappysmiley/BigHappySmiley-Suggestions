@@ -15,5 +15,17 @@
     {
       "binding": "SUGGESTIONS_KV"
     }
-  ]
+  ],
+  "vars": {
+    "APP_URL": "https://bighappysmiley-suggestions.blossom-twig.workers.dev",
+    "ADMIN_EMAILS": "",
+    "ADMIN_GITHUB_LOGINS": "",
+    "GITHUB_CLIENT_ID": "",
+    "BHS_OAUTH_CLIENT_ID": "",
+    "BHS_OAUTH_AUTHORIZE_URL": "",
+    "BHS_OAUTH_TOKEN_URL": "",
+    "BHS_OAUTH_USERINFO_URL": "",
+    "BHS_OAUTH_SCOPE": "openid profile email",
+    "EMAIL_FROM": ""
+  }
 }

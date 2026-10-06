@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import type { Tag } from "@/lib/types";
 
 export function NewSuggestionForm({
@@ -12,9 +14,9 @@ export function NewSuggestionForm({
   tags: Tag[];
 }) {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [authorName, setAuthorName] = useState("");
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -27,6 +29,10 @@ export function NewSuggestionForm({
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!user) {
+      router.push(`/login?redirect=/categories/${categoryId}/new`);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -37,7 +43,6 @@ export function NewSuggestionForm({
           categoryId,
           title,
           body,
-          authorName: authorName || "Anonymous",
           tagIds,
         }),
       });
@@ -52,6 +57,25 @@ export function NewSuggestionForm({
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitting(false);
     }
+  }
+
+  if (!loading && !user) {
+    return (
+      <div className="panel form-card">
+        <h2 style={{ fontSize: 16, marginBottom: 8 }}>Sign in required</h2>
+        <p className="field-hint">
+          You can browse suggestions freely. Sign in to create a new thread.
+        </p>
+        <div className="form-actions">
+          <Link
+            href={`/login?redirect=/categories/${categoryId}/new`}
+            className="btn btn-primary"
+          >
+            Sign in to post
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -80,17 +104,9 @@ export function NewSuggestionForm({
           required
         />
       </div>
-      <div className="field">
-        <label htmlFor="author">Your name</label>
-        <input
-          id="author"
-          className="input"
-          value={authorName}
-          onChange={(e) => setAuthorName(e.target.value)}
-          placeholder="Anonymous"
-          maxLength={80}
-        />
-      </div>
+      {user && (
+        <p className="field-hint">Posting as {user.name}</p>
+      )}
       {tags.length > 0 && (
         <div className="field">
           <label>Tags</label>
@@ -110,7 +126,6 @@ export function NewSuggestionForm({
               );
             })}
           </div>
-          <span className="field-hint">Optional. Pick labels that help triage.</span>
         </div>
       )}
       <div className="form-actions">

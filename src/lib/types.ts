@@ -19,6 +19,7 @@ export type Suggestion = {
   categoryId: string;
   title: string;
   body: string;
+  authorId: string;
   authorName: string;
   tagIds: string[];
   pinned: boolean;
@@ -31,6 +32,7 @@ export type Reply = {
   id: string;
   suggestionId: string;
   body: string;
+  authorId: string;
   authorName: string;
   createdAt: string;
 };

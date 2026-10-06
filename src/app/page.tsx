@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { getPublicUser } from "@/lib/auth/session";
 import { listCategories, listSuggestions } from "@/lib/store";
 
 export default async function HomePage() {
-  const categories = await listCategories();
+  const [categories, user] = await Promise.all([
+    listCategories(),
+    getPublicUser(),
+  ]);
   const counts = await Promise.all(
     categories.map(async (category) => {
       const suggestions = await listSuggestions(category.id);
@@ -24,19 +28,35 @@ export default async function HomePage() {
             Browse forum categories and open a board to read or post suggestions.
           </p>
         </div>
-        <Link href="/admin" className="btn btn-secondary">
-          Manage categories
-        </Link>
+        {user?.isAdmin ? (
+          <Link href="/admin" className="btn btn-secondary">
+            Manage categories
+          </Link>
+        ) : !user ? (
+          <Link href="/login" className="btn btn-secondary">
+            Sign in
+          </Link>
+        ) : null}
       </header>
       <div className="page-body">
         {categories.length === 0 ? (
           <div className="panel empty-state">
             <h3>No categories yet</h3>
-            <p>An admin needs to create the first category before people can post.</p>
+            <p>
+              {user?.isAdmin
+                ? "Create the first category to open the board."
+                : "An admin needs to create a category before people can post."}
+            </p>
             <div style={{ marginTop: 12 }}>
-              <Link href="/admin" className="btn btn-primary">
-                Go to admin
-              </Link>
+              {user?.isAdmin ? (
+                <Link href="/admin" className="btn btn-primary">
+                  Go to admin
+                </Link>
+              ) : (
+                <Link href="/login" className="btn btn-primary">
+                  Sign in
+                </Link>
+              )}
             </div>
           </div>
         ) : (

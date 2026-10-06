@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/auth/http";
+import { requireAdmin } from "@/lib/auth/session";
 import { getSuggestion, listReplies, listTags, togglePin } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -20,14 +22,19 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const { id } = await params;
-  const body = (await request.json()) as { action?: string };
-  if (body.action === "togglePin") {
-    const suggestion = await togglePin(id);
-    if (!suggestion) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    await requireAdmin();
+    const { id } = await params;
+    const body = (await request.json()) as { action?: string };
+    if (body.action === "togglePin") {
+      const suggestion = await togglePin(id);
+      if (!suggestion) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+      return NextResponse.json(suggestion);
     }
-    return NextResponse.json(suggestion);
+    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  } catch (error) {
+    return jsonError(error);
   }
-  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }

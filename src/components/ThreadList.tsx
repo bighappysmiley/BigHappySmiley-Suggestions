@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { formatRelativeTime } from "@/lib/format";
 import type { SortMode, Suggestion, Tag } from "@/lib/types";
 import { Avatar } from "./Avatar";
@@ -16,6 +17,7 @@ export function ThreadList({
   suggestions: Suggestion[];
   tags: Tag[];
 }) {
+  const { user } = useAuth();
   const [sort, setSort] = useState<SortMode>("recent");
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
@@ -62,9 +64,18 @@ export function ThreadList({
           </select>
         </label>
         <div className="toolbar-spacer" />
-        <Link href={`/categories/${categoryId}/new`} className="btn btn-primary">
-          New suggestion
-        </Link>
+        {user ? (
+          <Link href={`/categories/${categoryId}/new`} className="btn btn-primary">
+            New suggestion
+          </Link>
+        ) : (
+          <Link
+            href={`/login?redirect=/categories/${categoryId}/new`}
+            className="btn btn-primary"
+          >
+            Sign in to post
+          </Link>
+        )}
       </div>
 
       {tags.length > 0 && (
@@ -101,8 +112,12 @@ export function ThreadList({
       <div className="panel">
         {filtered.length === 0 ? (
           <div className="empty-state">
-            <h3>No suggestions match</h3>
-            <p>Try clearing filters or create a new suggestion in this category.</p>
+            <h3>No suggestions yet</h3>
+            <p>
+              {user
+                ? "Be the first to start a thread in this category."
+                : "Sign in to create the first suggestion."}
+            </p>
           </div>
         ) : (
           <div className="thread-list">

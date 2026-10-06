@@ -7,7 +7,7 @@ import type {
   Tag,
 } from "./types";
 
-const STORE_KEY = "suggestions-store";
+const STORE_KEY = "suggestions-store-v2";
 
 type KvLike = {
   get(key: string): Promise<string | null>;
@@ -209,6 +209,7 @@ export async function createSuggestion(input: {
   categoryId: string;
   title: string;
   body: string;
+  authorId: string;
   authorName: string;
   tagIds: string[];
 }): Promise<Suggestion | null> {
@@ -223,7 +224,8 @@ export async function createSuggestion(input: {
     categoryId: input.categoryId,
     title: input.title.trim(),
     body: input.body.trim(),
-    authorName: input.authorName.trim() || "Anonymous",
+    authorId: input.authorId,
+    authorName: input.authorName.trim(),
     tagIds: validTagIds,
     pinned: false,
     createdAt: timestamp,
@@ -254,6 +256,7 @@ export async function listReplies(suggestionId: string): Promise<Reply[]> {
 export async function createReply(input: {
   suggestionId: string;
   body: string;
+  authorId: string;
   authorName: string;
 }): Promise<Reply | null> {
   const store = await ensureStore();
@@ -263,7 +266,8 @@ export async function createReply(input: {
     id: id("rep"),
     suggestionId: input.suggestionId,
     body: input.body.trim(),
-    authorName: input.authorName.trim() || "Anonymous",
+    authorId: input.authorId,
+    authorName: input.authorName.trim(),
     createdAt: new Date().toISOString(),
   };
   store.replies.push(reply);

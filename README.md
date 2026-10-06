@@ -1,46 +1,61 @@
 # Suggestions
 
-Internal suggestions board modeled on Discord forum channels.
+Internal suggestions board modeled on Discord forum channels, with real authentication.
 
 ## Features
 
-- **Categories** — forum boards admins create and manage
-- **Suggestion threads** — title, tags, author, reply count, last activity, pins
-- **New suggestion** — create a post inside a category
-- **Thread view** — original post plus replies
-- **Admin** — create/delete categories and manage per-category tags
+- **Browse** categories and threads without signing in
+- **Sign in** with GitHub, BigHappySmiley (OAuth), or email magic link
+- **BigHappySmiley Community** login is shown as coming soon (disabled)
+- **Post / reply** requires authentication
+- **Admin** category/tag management for allowlisted emails or GitHub logins
+- **Workers KV** persistence for forum data and auth sessions
 
 ## Stack
 
 - Next.js (App Router) + TypeScript
 - Cloudflare Workers via `@opennextjs/cloudflare`
-- Data: Workers KV in production (`SUGGESTIONS_KV`); local `data/store.json` / in-memory fallback for `next dev`
+- Auth sessions + users in Workers KV (`SUGGESTIONS_KV`)
+
+## Auth model
+
+| Method | Status | Env |
+| --- | --- | --- |
+| GitHub OAuth | Working when configured | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` |
+| BigHappySmiley OAuth | Working when IdP env is set | `BHS_OAUTH_*` |
+| Email magic link | Working when Resend is set | `RESEND_API_KEY`, `EMAIL_FROM` |
+| BigHappySmiley Community | Coming soon (UI disabled) | — |
+
+Admins: set `ADMIN_EMAILS` and/or `ADMIN_GITHUB_LOGINS` (comma-separated). Until those are set, nobody is treated as admin.
+
+Also set `APP_URL` to the public origin (used for OAuth redirects and magic-link URLs).
+
+See `.env.example` for the full list.
 
 ## Develop
 
 ```bash
 npm install
+cp .env.example .env.local
+# fill secrets, then:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-## Deploy (Cloudflare)
-
-Full Next.js (SSR + API routes) deploys to **Cloudflare Workers** with the OpenNext adapter (the supported path for dynamic Next.js; classic `wrangler pages deploy` is for static exports only).
+## Deploy (Cloudflare Workers / OpenNext)
 
 ```bash
 npm run deploy
-# or, without an account (temporary preview, claim within 60 minutes):
+# temporary preview without account login:
 npx opennextjs-cloudflare build && npx wrangler deploy --temporary
 ```
 
-Requires Wrangler auth (`npx wrangler login`) or a temporary claim deploy.
+Set secrets with Wrangler (production):
 
-## Scripts
+```bash
+npx wrangler secret put GITHUB_CLIENT_SECRET
+npx wrangler secret put BHS_OAUTH_CLIENT_SECRET
+npx wrangler secret put RESEND_API_KEY
+# …and remaining secrets from .env.example
+```
 
-- `npm run dev` — local development server
-- `npm run build` — Next.js production build
-- `npm run preview` — OpenNext build + local Workers preview
-- `npm run deploy` — OpenNext build + Wrangler deploy
-- `npm run lint` — ESLint
+Non-secret vars can live in `wrangler.jsonc` under `vars` (for example `APP_URL`, `ADMIN_EMAILS`, OAuth client IDs, authorize/token/userinfo URLs).
