@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { neonAuthClient } from "@/lib/auth/neon-client";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const { user, config, loading } = useAuth();
+  const { user, config, loading, refresh } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -27,8 +31,6 @@ function LoginForm() {
         "BigHappySmiley login is not configured. Set BHS_OAUTH_* environment variables.",
       missing_code: "OAuth callback was missing an authorization code.",
       invalid_state: "OAuth state was invalid or expired. Try again.",
-      missing_token: "Magic link token was missing.",
-      invalid_or_expired_link: "That magic link is invalid or expired.",
     };
     return map[queryError] || queryError;
   }, [error, queryError]);
@@ -41,20 +43,40 @@ function LoginForm() {
 
   async function onEmailSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!config?.emailConfigured) {
+      setError(
+        "Neon Auth is not configured. Set NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET.",
+      );
+      return;
+    }
     setSending(true);
     setError(null);
     setStatus(null);
     try {
-      const res = await fetch("/api/auth/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = (await res.json()) as { error?: string; message?: string };
-      if (!res.ok) throw new Error(data.error || "Failed to send magic link");
-      setStatus(data.message || "Check your email for a sign-in link.");
+      if (mode === "signup") {
+        const { error: signUpError } = await neonAuthClient.signUp.email({
+          email,
+          password,
+          name: name.trim() || email.split("@")[0] || "User",
+        });
+        if (signUpError) {
+          throw new Error(signUpError.message || "Failed to create account");
+        }
+        setStatus("Account created. You can sign in now.");
+        setMode("signin");
+      } else {
+        const { error: signInError } = await neonAuthClient.signIn.email({
+          email,
+          password,
+        });
+        if (signInError) {
+          throw new Error(signInError.message || "Failed to sign in");
+        }
+        await refresh();
+        router.replace(redirect.startsWith("/") ? redirect : "/");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send magic link");
+      setError(err instanceof Error ? err.message : "Email auth failed");
     } finally {
       setSending(false);
     }
@@ -107,10 +129,23 @@ function LoginForm() {
         </div>
 
         <div className="login-divider">
-          <span>or email magic link</span>
+          <span>or email via Neon Auth</span>
         </div>
 
         <form onSubmit={onEmailSubmit} className="login-email">
+          {mode === "signup" && (
+            <div className="field">
+              <label htmlFor="name">Name</label>
+              <input
+                id="name"
+                className="input"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                disabled={!config?.emailConfigured || sending}
+              />
+            </div>
+          )}
           <div className="field">
             <label htmlFor="email">Email</label>
             <input
@@ -124,20 +159,51 @@ function LoginForm() {
               disabled={!config?.emailConfigured || sending}
             />
           </div>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={8}
+              disabled={!config?.emailConfigured || sending}
+            />
+          </div>
           <button
             type="submit"
             className="btn btn-primary login-btn"
             disabled={!config?.emailConfigured || sending}
           >
             {sending
-              ? "Sending…"
-              : config?.emailConfigured
-                ? "Email me a sign-in link"
-                : "Email login (configure env)"}
+              ? "Working…"
+              : !config?.emailConfigured
+                ? "Email login (configure Neon Auth)"
+                : mode === "signup"
+                  ? "Create account"
+                  : "Sign in with email"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost login-btn"
+            onClick={() => {
+              setMode((m) => (m === "signin" ? "signup" : "signin"));
+              setError(null);
+              setStatus(null);
+            }}
+            disabled={sending}
+          >
+            {mode === "signin"
+              ? "Need an account? Sign up"
+              : "Already have an account? Sign in"}
           </button>
         </form>
 
         <p className="field-hint" style={{ marginTop: 14 }}>
+          Email auth is powered by Neon Auth (verification emails via Neon).{" "}
           <Link href="/">← Back to categories</Link>
         </p>
       </div>

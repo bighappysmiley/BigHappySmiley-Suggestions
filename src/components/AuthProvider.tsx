@@ -46,6 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const logout = useCallback(async () => {
+    try {
+      const { neonAuthClient } = await import("@/lib/auth/neon-client");
+      await neonAuthClient.signOut();
+    } catch {
+      // Neon session may not exist.
+    }
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     await refresh();

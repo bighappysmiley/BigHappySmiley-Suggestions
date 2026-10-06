@@ -26,6 +26,7 @@
     "BHS_OAUTH_TOKEN_URL": "",
     "BHS_OAUTH_USERINFO_URL": "",
     "BHS_OAUTH_SCOPE": "openid profile email",
-    "EMAIL_FROM": ""
+    "NEON_AUTH_BASE_URL": "https://ep-holy-resonance-b4yv6szs.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth",
+    "NEON_AUTH_COOKIE_SECRET": "zyVZK5uVkCMkDyl+jb9DWg9yi87fRH+WH3WuN1PRwD0="
   }
 }

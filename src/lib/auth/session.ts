@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { isAdminUser } from "./admin";
 import { getAuthKv, randomToken } from "./kv";
+import { neonAuth } from "./neon-server";
 import type { PublicUser, Session, User } from "./types";
-import { getUserById } from "./users";
+import { getUserById, upsertOAuthUser } from "./users";
 
 const COOKIE_NAME = "suggestions_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -53,7 +54,7 @@ export async function getSessionToken(): Promise<string | null> {
   return jar.get(COOKIE_NAME)?.value ?? null;
 }
 
-export async function getCurrentUser(): Promise<User | null> {
+async function getUserFromKvSession(): Promise<User | null> {
   const token = await getSessionToken();
   if (!token) return null;
   const kv = await getAuthKv();
@@ -65,6 +66,30 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
   return getUserById(session.userId);
+}
+
+async function getUserFromNeonSession(): Promise<User | null> {
+  if (!neonAuth) return null;
+  try {
+    const { data: session } = await neonAuth.getSession();
+    const neonUser = session?.user;
+    if (!neonUser?.id) return null;
+    return upsertOAuthUser({
+      provider: "email",
+      providerAccountId: String(neonUser.id),
+      email: neonUser.email ?? null,
+      name: neonUser.name || neonUser.email || "User",
+      image: (neonUser.image as string | null | undefined) ?? null,
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function getCurrentUser(): Promise<User | null> {
+  const fromKv = await getUserFromKvSession();
+  if (fromKv) return fromKv;
+  return getUserFromNeonSession();
 }
 
 export async function getPublicUser(): Promise<PublicUser | null> {
@@ -95,6 +120,19 @@ export async function requireAdmin(): Promise<User> {
     throw new AuthError("Admin access required", 403);
   }
   return user;
+}
+
+export async function signOutEverywhere(): Promise<void> {
+  const token = await getSessionToken();
+  if (token) await destroySession(token);
+  await clearSessionCookie();
+  if (neonAuth) {
+    try {
+      await neonAuth.signOut();
+    } catch {
+      // Ignore Neon logout failures when no Neon session exists.
+    }
+  }
 }
 
 export class AuthError extends Error {

@@ -35,7 +35,9 @@ export function getAuthConfigStatus(request?: Request): AuthConfigStatus {
         envVar("BHS_OAUTH_TOKEN_URL") &&
         envVar("BHS_OAUTH_USERINFO_URL"),
     ),
-    emailConfigured: Boolean(envVar("RESEND_API_KEY") && envVar("EMAIL_FROM")),
+    emailConfigured: Boolean(
+      envVar("NEON_AUTH_BASE_URL") && envVar("NEON_AUTH_COOKIE_SECRET"),
+    ),
     appUrl: appBaseUrl(request),
   };
 }
