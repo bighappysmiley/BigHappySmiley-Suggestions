@@ -8,12 +8,14 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "account_id": "502aea55762ce88ea798f7c5947bd08a",
   "observability": {
     "enabled": true
   },
   "kv_namespaces": [
     {
-      "binding": "SUGGESTIONS_KV"
+      "binding": "SUGGESTIONS_KV",
+      "id": "b3025dc0b24a49d784d937141f513a23"
     }
   ],
   "vars": {
