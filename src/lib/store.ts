@@ -1,5 +1,3 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { SEED_DATA } from "./seed";
 import type {
   Category,
@@ -9,28 +7,88 @@ import type {
   Tag,
 } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const STORE_PATH = path.join(DATA_DIR, "store.json");
+const STORE_KEY = "suggestions-store";
+
+type KvLike = {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+};
 
 function cloneSeed(): StoreData {
   return structuredClone(SEED_DATA);
 }
 
-async function ensureStore(): Promise<StoreData> {
+let memoryStore: StoreData | null = null;
+
+async function getKv(): Promise<KvLike | null> {
   try {
-    const raw = await fs.readFile(STORE_PATH, "utf8");
-    return JSON.parse(raw) as StoreData;
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = await getCloudflareContext({ async: true });
+    const kv = (env as { SUGGESTIONS_KV?: KvLike }).SUGGESTIONS_KV;
+    return kv ?? null;
   } catch {
-    const seed = cloneSeed();
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(STORE_PATH, JSON.stringify(seed, null, 2), "utf8");
-    return seed;
+    return null;
   }
 }
 
+async function readFromFs(): Promise<StoreData | null> {
+  try {
+    const { promises: fs } = await import("fs");
+    const path = await import("path");
+    const storePath = path.join(process.cwd(), "data", "store.json");
+    const raw = await fs.readFile(storePath, "utf8");
+    return JSON.parse(raw) as StoreData;
+  } catch {
+    return null;
+  }
+}
+
+async function writeToFs(data: StoreData): Promise<boolean> {
+  try {
+    const { promises: fs } = await import("fs");
+    const path = await import("path");
+    const dataDir = path.join(process.cwd(), "data");
+    const storePath = path.join(dataDir, "store.json");
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.writeFile(storePath, JSON.stringify(data, null, 2), "utf8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureStore(): Promise<StoreData> {
+  const kv = await getKv();
+  if (kv) {
+    const raw = await kv.get(STORE_KEY);
+    if (raw) return JSON.parse(raw) as StoreData;
+    const seed = cloneSeed();
+    await kv.put(STORE_KEY, JSON.stringify(seed));
+    return seed;
+  }
+
+  const fromFs = await readFromFs();
+  if (fromFs) {
+    memoryStore = fromFs;
+    return fromFs;
+  }
+
+  if (memoryStore) return memoryStore;
+
+  const seed = cloneSeed();
+  memoryStore = seed;
+  await writeToFs(seed);
+  return seed;
+}
+
 async function writeStore(data: StoreData): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(STORE_PATH, JSON.stringify(data, null, 2), "utf8");
+  memoryStore = data;
+  const kv = await getKv();
+  if (kv) {
+    await kv.put(STORE_KEY, JSON.stringify(data));
+    return;
+  }
+  await writeToFs(data);
 }
 
 function id(prefix: string): string {

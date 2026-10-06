@@ -46,3 +46,8 @@ next-env.d.ts
 # Next.js agent rule stubs
 /AGENTS.md
 /CLAUDE.md
+
+# OpenNext / Cloudflare
+/.open-next/
+/.wrangler/
+/cloudflare-env.d.ts
