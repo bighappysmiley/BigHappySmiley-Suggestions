@@ -17,7 +17,7 @@
     }
   ],
   "vars": {
-    "APP_URL": "https://bighappysmiley-suggestions.blossom-twig.workers.dev",
+    "APP_URL": "https://bighappysmiley-suggestions.motley-bromine.workers.dev",
     "ADMIN_EMAILS": "",
     "ADMIN_GITHUB_LOGINS": "",
     "GITHUB_CLIENT_ID": "",
