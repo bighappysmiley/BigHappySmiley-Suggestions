@@ -42,3 +42,7 @@ next-env.d.ts
 
 # local JSON store (seeded at runtime)
 /data/store.json
+
+# Next.js agent rule stubs
+/AGENTS.md
+/CLAUDE.md
