@@ -26,13 +26,13 @@ function LoginForm() {
     if (!queryError) return null;
     const map: Record<string, string> = {
       github_not_configured:
-        "GitHub login is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.",
+        "GitHub sign-in is temporarily unavailable. Please use email instead.",
       bhs_not_configured:
-        "BigHappySmiley login is not configured. Set BHS_OAUTH_* environment variables.",
-      missing_code: "OAuth callback was missing an authorization code.",
-      invalid_state: "OAuth state was invalid or expired. Try again.",
+        "BigHappySmiley sign-in is temporarily unavailable. Please use email instead.",
+      missing_code: "Sign-in did not complete. Please try again.",
+      invalid_state: "Your sign-in session expired. Please try again.",
     };
-    return map[queryError] || queryError;
+    return map[queryError] || "Something went wrong while signing in. Please try again.";
   }, [error, queryError]);
 
   useEffect(() => {
@@ -44,9 +44,7 @@ function LoginForm() {
   async function onEmailSubmit(event: FormEvent) {
     event.preventDefault();
     if (!config?.emailConfigured) {
-      setError(
-        "Neon Auth is not configured. Set NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET.",
-      );
+      setError("Email sign-in is temporarily unavailable. Please try again later.");
       return;
     }
     setSending(true);
@@ -57,12 +55,12 @@ function LoginForm() {
         const { error: signUpError } = await neonAuthClient.signUp.email({
           email,
           password,
-          name: name.trim() || email.split("@")[0] || "User",
+          name: name.trim() || email.split("@")[0] || "Member",
         });
         if (signUpError) {
-          throw new Error(signUpError.message || "Failed to create account");
+          throw new Error(signUpError.message || "Could not create your account");
         }
-        setStatus("Account created. You can sign in now.");
+        setStatus("Account created. Sign in with your email and password.");
         setMode("signin");
       } else {
         const { error: signInError } = await neonAuthClient.signIn.email({
@@ -70,13 +68,13 @@ function LoginForm() {
           password,
         });
         if (signInError) {
-          throw new Error(signInError.message || "Failed to sign in");
+          throw new Error(signInError.message || "Could not sign in");
         }
         await refresh();
         router.replace(redirect.startsWith("/") ? redirect : "/");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Email auth failed");
+      setError(err instanceof Error ? err.message : "Could not complete email sign-in");
     } finally {
       setSending(false);
     }
@@ -84,53 +82,39 @@ function LoginForm() {
 
   const githubHref = `/api/auth/github?redirect=${encodeURIComponent(redirect)}`;
   const bhsHref = `/api/auth/bhs?redirect=${encodeURIComponent(redirect)}`;
+  const showOAuth = Boolean(config?.githubConfigured || config?.bhsConfigured);
 
   return (
     <div className="login-page">
       <div className="panel login-card">
         <h1>Sign in</h1>
         <p className="login-lead">
-          Browse freely. Sign in to post suggestions and replies. Category
-          management is limited to admins.
+          Browse suggestions freely. Sign in to post ideas and join the discussion.
         </p>
 
         {errorMessage && <div className="error-banner">{errorMessage}</div>}
         {status && <div className="success-banner">{status}</div>}
 
-        <div className="login-actions">
-          {config?.githubConfigured ? (
-            <a className="btn btn-secondary login-btn" href={githubHref}>
-              Continue with GitHub
-            </a>
-          ) : (
-            <button type="button" className="btn btn-secondary login-btn" disabled>
-              Continue with GitHub (configure env)
-            </button>
-          )}
+        {showOAuth && (
+          <div className="login-actions">
+            {config?.githubConfigured && (
+              <a className="btn btn-secondary login-btn" href={githubHref}>
+                Continue with GitHub
+              </a>
+            )}
+            {config?.bhsConfigured && (
+              <a className="btn btn-secondary login-btn" href={bhsHref}>
+                Continue with BigHappySmiley
+              </a>
+            )}
+          </div>
+        )}
 
-          {config?.bhsConfigured ? (
-            <a className="btn btn-secondary login-btn" href={bhsHref}>
-              Continue with BigHappySmiley
-            </a>
-          ) : (
-            <button type="button" className="btn btn-secondary login-btn" disabled>
-              Continue with BigHappySmiley (configure env)
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="btn btn-secondary login-btn"
-            disabled
-            title="Not available yet"
-          >
-            BigHappySmiley Community — coming soon
-          </button>
-        </div>
-
-        <div className="login-divider">
-          <span>or email via Neon Auth</span>
-        </div>
+        {showOAuth && (
+          <div className="login-divider">
+            <span>or continue with email</span>
+          </div>
+        )}
 
         <form onSubmit={onEmailSubmit} className="login-email">
           {mode === "signup" && (
@@ -142,6 +126,7 @@ function LoginForm() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
+                autoComplete="name"
                 disabled={!config?.emailConfigured || sending}
               />
             </div>
@@ -154,8 +139,9 @@ function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
+              placeholder="you@example.com"
               required
+              autoComplete="email"
               disabled={!config?.emailConfigured || sending}
             />
           </div>
@@ -167,9 +153,10 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="At least 8 characters"
               required
               minLength={8}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
               disabled={!config?.emailConfigured || sending}
             />
           </div>
@@ -179,12 +166,12 @@ function LoginForm() {
             disabled={!config?.emailConfigured || sending}
           >
             {sending
-              ? "Working…"
+              ? "Please wait…"
               : !config?.emailConfigured
-                ? "Email login (configure Neon Auth)"
+                ? "Email sign-in unavailable"
                 : mode === "signup"
                   ? "Create account"
-                  : "Sign in with email"}
+                  : "Sign in"}
           </button>
           <button
             type="button"
@@ -197,14 +184,13 @@ function LoginForm() {
             disabled={sending}
           >
             {mode === "signin"
-              ? "Need an account? Sign up"
+              ? "Need an account? Create one"
               : "Already have an account? Sign in"}
           </button>
         </form>
 
         <p className="field-hint" style={{ marginTop: 14 }}>
-          Email auth is powered by Neon Auth (verification emails via Neon).{" "}
-          <Link href="/">← Back to categories</Link>
+          <Link href="/">Back to suggestions</Link>
         </p>
       </div>
     </div>
@@ -213,7 +199,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="page-body">Loading sign-in…</div>}>
+    <Suspense fallback={<div className="page-body">Loading…</div>}>
       <LoginForm />
     </Suspense>
   );

@@ -33,8 +33,8 @@ export function AppShell({
       <div className="app-shell">
         <aside className={`sidebar${open ? " open" : ""}`}>
           <div className="sidebar-brand">
-            <div className="sidebar-brand-title">Suggestions</div>
-            <div className="sidebar-brand-sub">BigHappySmiley forum</div>
+            <div className="sidebar-brand-title">BigHappySmiley</div>
+            <div className="sidebar-brand-sub">Suggestions</div>
           </div>
           <div className="sidebar-section-label">Categories</div>
           <nav className="sidebar-nav" aria-label="Categories">
@@ -107,7 +107,7 @@ export function AppShell({
             >
               Menu
             </button>
-            <strong>Suggestions</strong>
+            <strong>BigHappySmiley</strong>
           </div>
           {children}
         </div>

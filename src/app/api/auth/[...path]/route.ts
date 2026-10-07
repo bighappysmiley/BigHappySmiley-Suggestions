@@ -6,10 +6,7 @@ export const dynamic = "force-dynamic";
 
 function notConfigured() {
   return NextResponse.json(
-    {
-      error:
-        "Neon Auth is not configured. Set NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET.",
-    },
+    { error: "Email authentication is temporarily unavailable." },
     { status: 503 },
   );
 }

@@ -20,7 +20,7 @@
   ],
   "vars": {
     "APP_URL": "https://bighappysmiley-suggestions.motley-bromine.workers.dev",
-    "ADMIN_EMAILS": "",
+    "ADMIN_EMAILS": "hf@bighappysmiley.com",
     "ADMIN_GITHUB_LOGINS": "",
     "GITHUB_CLIENT_ID": "",
     "BHS_OAUTH_CLIENT_ID": "",

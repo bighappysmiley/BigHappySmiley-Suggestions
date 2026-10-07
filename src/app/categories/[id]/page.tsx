@@ -21,7 +21,10 @@ export default async function CategoryPage({ params }: Params) {
           <h1>
             {category.emoji} {category.name}
           </h1>
-          <p>{category.description || "Suggestions for this category."}</p>
+          <p>
+            {category.description ||
+              "Share ideas and discuss improvements in this category."}
+          </p>
         </div>
       </header>
       <div className="page-body">

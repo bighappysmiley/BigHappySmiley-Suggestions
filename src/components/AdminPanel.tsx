@@ -361,8 +361,8 @@ export function AdminPanel({
         </section>
       </div>
       <p className="field-hint" style={{ marginTop: 12 }}>
-        Admins are controlled by <code>ADMIN_EMAILS</code> and{" "}
-        <code>ADMIN_GITHUB_LOGINS</code>. <Link href="/">Return home</Link>
+        Only allowlisted admins can manage categories and tags.{" "}
+        <Link href="/">Return home</Link>
       </p>
     </div>
   );

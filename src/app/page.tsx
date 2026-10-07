@@ -25,7 +25,7 @@ export default async function HomePage() {
         <div>
           <h1>Categories</h1>
           <p>
-            Browse forum categories and open a board to read or post suggestions.
+            Explore topics, read existing ideas, and share your own suggestions.
           </p>
         </div>
         {user?.isAdmin ? (
@@ -44,8 +44,8 @@ export default async function HomePage() {
             <h3>No categories yet</h3>
             <p>
               {user?.isAdmin
-                ? "Create the first category to open the board."
-                : "An admin needs to create a category before people can post."}
+                ? "Create a category to get the board started."
+                : "Categories will appear here once an admin sets them up."}
             </p>
             <div style={{ marginTop: 12 }}>
               {user?.isAdmin ? (
@@ -72,7 +72,7 @@ export default async function HomePage() {
                   <div className="category-icon">{category.emoji}</div>
                   <div className="category-meta">
                     <h2>{category.name}</h2>
-                    <p>{category.description || "No description"}</p>
+                    <p>{category.description || "Open this category to browse suggestions."}</p>
                   </div>
                   <div className="category-stats">
                     <div>

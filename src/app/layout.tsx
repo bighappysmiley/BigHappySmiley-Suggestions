@@ -16,8 +16,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Suggestions",
-  description: "Internal suggestions forum for categories, threads, and replies.",
+  title: "Suggestions · BigHappySmiley",
+  description:
+    "Share product ideas, discuss improvements, and follow suggestion threads.",
 };
 
 export const dynamic = "force-dynamic";
