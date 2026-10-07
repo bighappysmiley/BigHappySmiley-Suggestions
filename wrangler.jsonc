@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bighappysmiley-suggestions",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "account_id": "502aea55762ce88ea798f7c5947bd08a",
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SUGGESTIONS_KV",
+      "id": "b3025dc0b24a49d784d937141f513a23"
+    }
+  ],
+  "vars": {
+    "APP_URL": "https://bighappysmiley-suggestions.motley-bromine.workers.dev",
+    "ADMIN_EMAILS": "hf@bighappysmiley.com",
+    "ADMIN_GITHUB_LOGINS": "",
+    "GITHUB_CLIENT_ID": "",
+    "BHS_OAUTH_CLIENT_ID": "",
+    "BHS_OAUTH_AUTHORIZE_URL": "",
+    "BHS_OAUTH_TOKEN_URL": "",
+    "BHS_OAUTH_USERINFO_URL": "",
+    "BHS_OAUTH_SCOPE": "openid profile email",
+    "NEON_AUTH_BASE_URL": "https://ep-holy-resonance-b4yv6szs.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth",
+    "NEON_AUTH_COOKIE_SECRET": "zyVZK5uVkCMkDyl+jb9DWg9yi87fRH+WH3WuN1PRwD0="
+  }
+}
