@@ -78,7 +78,7 @@ async function getUserFromNeonSession(): Promise<User | null> {
       provider: "email",
       providerAccountId: String(neonUser.id),
       email: neonUser.email ?? null,
-      name: neonUser.name || neonUser.email || "User",
+      name: neonUser.name || neonUser.email || "Member",
       image: (neonUser.image as string | null | undefined) ?? null,
     });
   } catch {
