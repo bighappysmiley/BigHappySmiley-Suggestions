@@ -180,7 +180,7 @@ export function AdminPanel({
                     <h3>
                       {category.emoji} {category.name}
                     </h3>
-                    <p>{category.description || "No description"}</p>
+                    <p>{category.description || "No description yet"}</p>
                   </div>
                   <div className="admin-actions">
                     <button
